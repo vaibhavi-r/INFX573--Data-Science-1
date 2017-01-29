@@ -12,7 +12,7 @@ Seatbelts were not mandatory in the UK before January 31, 1983. This dataset sum
 ###Lab 2: Exploring Movie ratings from the MovieLens dataset & some Probability Distributions
 Dataset: movies.csv, ratings.csv
 Summary:
-Practice basic EDA on movie ratings and users and examine some common probability distributions.
+Practice basic EDA on movie ratings and users and examine some common probability distributions(Poisson, Gaussian, Exponential).
 
 ###Lab 3: Exploring genres and users in the Movielens dataset
 Dataset: movies.csv, ratings.csv
