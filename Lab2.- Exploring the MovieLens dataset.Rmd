@@ -1,0 +1,349 @@
+---
+title: "Lab2"
+author: "vaibhavi"
+date: "January 19, 2017"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#Set current working directory
+setwd("C:/Users/Vibes/Desktop/573-Data Science-1/Lab2")
+
+```
+
+## Part 1
+
+###1. Load the data.
+```{r}
+movies=read.csv("movies.csv")
+ratings=read.csv("ratings.csv")
+```
+
+####a) what are the dimensions of the data? Ie, how many ratings? How many raters?
+Movies: There are 9125 Rows and 4 Columns
+Ratings: There are 100004 Rows and 5 Columns
+```{r}
+cat("Movie Summary Data\n")
+nrow(movies)
+ncol(movies)
+summary(movies)
+
+cat("\n\nRatings Summary Data\n")
+nrow(ratings)
+ncol(ratings)
+summary(ratings)
+
+```
+
+####b) what are the mean, median, and standard deviation of the ratings?
+
+Ratings:
+Mean= 3.543608
+Median= 4
+Standard Deviation= 1.058064
+```{r}
+
+mean(ratings[,"rating"])
+median(ratings[,"rating"], na.rm=FALSE)
+sd(ratings[,"rating"])
+
+
+```
+
+####c) plot a histogram of the ratings. What patterns do you see? Do people seem to prefer round numbers?
+People seem to prefer round numbers over non-round numbers, as the bars are much lower for the non-round ratings.
+This can be an innate preference of humans to express their ratings in whole numbers instead of fractions.
+
+```{r}
+
+hist(ratings[,"rating"],  main="Histogram for Ratings",     xlab="Ratings",     border="blue",     col="green",     xlim=c(0,5), las=1)
+
+```
+
+###2. Link the two datasets using movieId. 
+The function match() is useful:
+ix <- match(ratings$movieId, movies$movieId)
+
+How can you verify that you have the correct link? Hint read the help of what match() is doing and then use head() to compare the datasets.
+By verifying both ways, we can see that the movieId is mapped to the order of movie Id as present in the rating table using match formula.
+
+```{r}
+ix = match(ratings$movieId, movies$movieId)
+
+#Finds the top few movie Id from ratings Table - CORRECT USAGE
+head(ratings$movieId)
+head(movies$movieId[ix])
+
+head(ratings$movieId[ix])
+head(movies$movieId)
+
+```
+
+
+
+###3. Exploring Relationships I: Visually explore relationships between your variables.
+
+####a) Plot the relationship between ratings and year. Try a scatter plot and a box plot. What do you see?
+
+The scatter plot is very messy because there are too many data points to fit within the small space. Using box plots and cut is a good option.
+
+####Scatter Plot
+```{r}
+plot(ratings$year,ratings$rating, main="Ratings over time (No cut)", xlab="Year", ylab="Rating", pch=2, col="lightblue")
+
+#Use Cut
+ratings$decade <- cut(ratings$year, breaks = seq(1900, 2020, by = 10))
+
+plot(ratings$decade, ratings$rating, main="Ratings over Decades", xlab="Year", ylab="Rating", col="lightblue")
+
+
+
+```
+
+
+####b) It is messy, try coarse-graining the data using cut() on the years.
+####Box Plot
+We can see that the mean ratings for movies have dipped slighlty over time in a slow manner. More movies are rated lower in the current age, than in the past 3 decades.
+The slight dip in mean ratings can be explained by the passage of time. In essence, the movies from 1920's, 1930's that are still around and viewed are probably the high quality films. Whereas in the present, we have many movies, and it is hard to separate the signal of good movies from the noise, which can happen in a few 50 years, when the bad movies of today will be forgotten. 
+
+```{r}
+boxplot(ratings$rating~ratings$year)
+ratings$decade <- cut(ratings$year, breaks = seq(1900, 2020, by = 10))
+boxplot(ratings$rating~ratings$decade, col="lightblue")
+```
+
+
+
+###4. Exploring Relationships II:
+####a) Do the ratings vary by genre? Create a 'comedy' column and draw a box plot of ratings for comedy versus others:
+
+```{r}
+ratings$comedy <- rep(F, nrow=ratings)
+ratings$comedy[grep("comedy",ratings$genre, ignore.case = T)] <- T
+
+boxplot(ratings$rating~ratings$comedy, main="Ratings for Comedy films", xlab="Is it a Comedy?", ylab="Rating" )
+
+```
+
+
+
+####b) Run a t-test to see if the differences in ratings for comedy versus non-comedy (note, we haven't learned yet what this is, but we will soon!). 
+The results are presented below.
+```{r}
+t.test(ratings$rating, ratings$comedy)
+
+```
+
+
+
+###5. Extra credit: what's the "best" movie in the dataset?
+Come up with a metric to assess quality and find the top 10 movies.
+The metric chosen would be the highest percent of 5 ratings. 
+For each movie, find % of 5 ratings among all ratings, followed by % of 4.5 and 4 ratings.
+Eliminate movies with less than 20 ratings from the set.
+And sort the movies in decreasing order of 5-rating percentage, and 4+ rating percentage to find top 10 movies.
+```{r}
+#movierating = aggregate(ratings, by=list(ratings$movieId, ratings$rating), FUN=function(x) length(unique(x)))
+#movierating
+
+
+```
+
+## Part 2
+
+1) Examine several distributions. Plot a histogram of 1000 samples from an
+exponential and uniform distributions with default mean and variance, and a Poisson
+distribution with lambda = 1/2 (look up rexp(), runif(), and rpois()).
+
+####Exponential Distribution
+```{r}
+#Parameter Rate default = 1. Mean= 1/ Rate
+exponential =rexp(1000)  
+hist(exponential, main="Histogram for Exponential Distribution", xlab="value", col="orange")
+```
+
+####Uniform Distribution
+```{r}
+#Parameter Rate default = 1. Mean= Rate
+uniform= runif(1000) 
+hist(uniform,main="Histogram for Uniform Distribution", xlab="value", col="orange")
+```
+
+####Poisson Distribution
+```{r}
+#Parameter Rate default = 1. Mean= Rate. Lambda  =1/2
+poisson= rpois(1000, 1/2) 
+hist(poisson,main="Histogram for Poisson Distribution", xlab="value", col="orange")
+```
+
+
+2) Look at the distributions of sums of these samples. Here's some code to
+look at sums of the exponential variables:
+What distribution does the histogram of sums look like? Add this curve for a helpful
+comparison:
+
+```{r}
+N <- 1000 # number of exponential draws
+n.samp <- 30 # number of sums to take
+M <- matrix(NA, nrow=N, ncol=n.samp) # create an empty matrix to fill with samples
+
+for(j in 1:n.samp) M[,j] <- rexp(N) #generate the samples
+hist(rowSums(M), freq = F, main="Exponential, N=1000, n.samp=30") # plot a histogram of the sums across rows of our matrix M
+
+#adding red curve for comparison
+curve(dnorm(x, mean(rowSums(M)), sd(rowSums(M))), min(rowSums(M)),
+max(rowSums(M)), add=T, col="red", lwd=2)
+
+```
+
+3) Repeat this for the uniform and Poisson distributions. (Hint: the code can be
+copied and one single function can be replaces - which is it?) What pattern has
+emerged?
+```{r}
+N <- 1000 # number of uniform draws
+n.samp <- 30 # number of sums to take
+M <- matrix(NA, nrow=N, ncol=n.samp) # create an empty matrix to fill with samples
+
+for(j in 1:n.samp) M[,j] <- runif(N) #generate the samples
+hist(rowSums(M), freq = F, "Uniform, N=1000, n.samp=30") # plot a histogram of the sums across rows of our matrix M
+
+#adding red curve for comparison
+curve(dnorm(x, mean(rowSums(M)), sd(rowSums(M))), min(rowSums(M)),
+max(rowSums(M)), add=T, col="red", lwd=2)
+
+```
+
+```{r}
+N <- 1000 # number of poisson draws
+lambda= 1/2
+n.samp <- 30 # number of sums to take
+M <- matrix(NA, nrow=N, ncol=n.samp) # create an empty matrix to fill with samples
+
+for(j in 1:n.samp) M[,j] <- rpois(N, lambda) #generate the samples
+hist(rowSums(M), freq = F, "Poisson, N=1000, n.samp=30") # plot a histogram of the sums across rows of our matrix M
+
+#adding red curve for comparison
+curve(dnorm(x, mean(rowSums(M)), sd(rowSums(M))), min(rowSums(M)),
+max(rowSums(M)), add=T, col="red", lwd=2)
+
+```
+
+
+4) Further explorations. What happens when you change the number of samples from
+the distribution? What happens when you change the number of sums taken?
+
+Reducing/Increasing value of N = The curve of the histogram flattens/sharpens accordingly. 
+
+Reducing/Increasing value of n.samp = Shifts the curve of histogram to the left or right. Peak occurs at a different rowSum value
+
+####Adding more samples
+```{r}
+N<- 1000 # number of draws
+n.samp <- 100 # number of sums to take
+M <- matrix(NA, nrow=N, ncol=n.samp) # create an empty matrix to fill with samples
+
+for(j in 1:n.samp) M[,j] <- rexp(N)
+hist(rowSums(M), freq = F, "Exponential, N=1000, n.samp=100(Increased)") 
+curve(dnorm(x, mean(rowSums(M)), sd(rowSums(M))), min(rowSums(M)),
+max(rowSums(M)), add=T, col="red", lwd=2)
+
+
+for(j in 1:n.samp) M[,j] <- runif(N)
+hist(rowSums(M), freq = F, "Uniform, N=1000, n.samp=100(Increased)")
+curve(dnorm(x, mean(rowSums(M)), sd(rowSums(M))), min(rowSums(M)),
+max(rowSums(M)), add=T, col="red", lwd=2)
+
+
+for(j in 1:n.samp) M[,j] <- rpois(N, 1/2)
+hist(rowSums(M), freq = F, "Poisson, N=1000, n.samp=100(Increased)") 
+curve(dnorm(x, mean(rowSums(M)), sd(rowSums(M))), min(rowSums(M)),
+max(rowSums(M)), add=T, col="red", lwd=2)
+
+
+```
+
+Reducing samples
+```{r}
+N<- 1000 # number of draws
+n.samp <- 10 # number of sums to take
+M <- matrix(NA, nrow=N, ncol=n.samp) # create an empty matrix to fill with samples
+
+for(j in 1:n.samp) M[,j] <- rexp(N)
+hist(rowSums(M), freq = F, "Exponential, N=1000, n.samp=10(Reduced)") 
+curve(dnorm(x, mean(rowSums(M)), sd(rowSums(M))), min(rowSums(M)),
+max(rowSums(M)), add=T, col="red", lwd=2)
+
+
+for(j in 1:n.samp) M[,j] <- runif(N)
+hist(rowSums(M), freq = F, "Uniform, N=1000, n.samp=10(Reduced)") 
+curve(dnorm(x, mean(rowSums(M)), sd(rowSums(M))), min(rowSums(M)),
+max(rowSums(M)), add=T, col="red", lwd=2)
+
+
+for(j in 1:n.samp) M[,j] <- rpois(N, 1/2)
+hist(rowSums(M), freq = F, "Poisson, N=1000, n.samp=10(Reduced)") 
+curve(dnorm(x, mean(rowSums(M)), sd(rowSums(M))), min(rowSums(M)),
+max(rowSums(M)), add=T, col="red", lwd=2)
+
+```
+
+
+####Adding More Number of sums
+```{r}
+
+N<- 10000 # number of draws
+n.samp <- 30 # number of sums to take
+M <- matrix(NA, nrow=N, ncol=n.samp) # create an empty matrix to fill with samples
+
+for(j in 1:n.samp) M[,j] <- rexp(N)
+hist(rowSums(M), freq = F, "Exponential, N=10000(Increased), n.samp=30") 
+curve(dnorm(x, mean(rowSums(M)), sd(rowSums(M))), min(rowSums(M)),
+max(rowSums(M)), add=T, col="red", lwd=2)
+
+
+for(j in 1:n.samp) M[,j] <- runif(N)
+hist(rowSums(M), freq = F, "Uniform, N=10000(Increased), n.samp=30") 
+curve(dnorm(x, mean(rowSums(M)), sd(rowSums(M))), min(rowSums(M)),
+max(rowSums(M)), add=T, col="red", lwd=2)
+
+
+for(j in 1:n.samp) M[,j] <- rpois(N, 1/2)
+hist(rowSums(M), freq = F, "Poisson, N=10000(Increased), n.samp=30") 
+curve(dnorm(x, mean(rowSums(M)), sd(rowSums(M))), min(rowSums(M)),
+max(rowSums(M)), add=T, col="red", lwd=2)
+
+
+```
+
+
+####Reducing number of sums
+```{r}
+N<- 100 # number of draws
+n.samp <- 30 # number of sums to take
+M <- matrix(NA, nrow=N, ncol=n.samp) # create an empty matrix to fill with samples
+
+for(j in 1:n.samp) M[,j] <- rexp(N)
+hist(rowSums(M), freq = F, "Exponential, N=100(Reduced), n.samp=30") 
+curve(dnorm(x, mean(rowSums(M)), sd(rowSums(M))), min(rowSums(M)),
+max(rowSums(M)), add=T, col="red", lwd=2)
+
+
+for(j in 1:n.samp) M[,j] <- runif(N)
+hist(rowSums(M), freq = F, "Uniform, N=100(Reduced), n.samp=30") 
+curve(dnorm(x, mean(rowSums(M)), sd(rowSums(M))), min(rowSums(M)),
+max(rowSums(M)), add=T, col="red", lwd=2)
+
+
+for(j in 1:n.samp) M[,j] <- rpois(N, 1/2)
+hist(rowSums(M), freq = F, "Poisson, N=100(Reduced), n.samp=30") 
+curve(dnorm(x, mean(rowSums(M)), sd(rowSums(M))), min(rowSums(M)),
+max(rowSums(M)), add=T, col="red", lwd=2)
+
+
+
+```
+
+

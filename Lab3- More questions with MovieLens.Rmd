@@ -1,0 +1,117 @@
+---
+title: "Lab 3"
+author: "vaibhavi"
+date: "January 27, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Movies Dataset: More Analysis!
+
+### Load the data.
+```{r}
+movies=read.csv("movies.csv")
+ratings=read.csv("ratings.csv")
+```
+
+
+### a) How many unique genres of movies are there?
+There are 19 overall genres, if we exclude the "(no genres listed)" label applied in the genre column.
+Used strsplit to create lists within each row.
+Used unlist to break all the lists within each row into individual genres.
+```{r}
+genres = strsplit(as.character(movies$genre), "[|]")
+allgenres = unlist(genres)
+uniquegenres= unique(allgenres)
+uniquegenres
+
+```
+
+
+
+### b) Of the unique genres, what are the 5 most popular?
+Top 5 are Drama, Comedy,Thriller, Action, Romance
+```{r}
+#uniquegenres
+#names(uniquegenres) is NULL, because uniquegenres is a Vector
+
+#genremovies = data.frame(genre = uniquegenres)
+#genremovies$genre = uniquegenres
+
+#genremovies$movienum=lapply(uniquegenres, function(x)  length(grep(paste("\\<", x, "\\>", sep=""), ratings$genre)) );
+#genremovies
+#find_instances = function(x) { length(grep(paste("\\<", x, "\\>", sep="")), ratings$genre) }
+#find_instances(x="Drama")
+
+freqtable =table(allgenres)
+freqtable[order(table(allgenres), decreasing=TRUE)]
+
+
+```
+
+
+
+### c) Distribution of Number of ratings per user. Are there "super raters" who review much more than others?
+
+```{r}
+#users= ratings$userId
+#hist(users, breaks=length(users)-1)
+
+ratingsuser=data.frame(table(ratings$userId))
+#dim(ratingsuser)
+colnames(ratingsuser)=c("UserId", "FilmsRated")
+
+#To get raters in decreasing order
+#Need to sort so that we get a better idea of distribution
+#ratingsuser=ratingsuser[order(ratingsuser$FilmsRated, decreasing="TRUE"),]
+#ratingsuser
+
+#Keeping only the Films Rated, in Descending Order
+ratedvalues=ratingsuser[order(ratingsuser$FilmsRated, decreasing="TRUE"), "FilmsRated"] 
+
+
+ hist(ratedvalues, breaks=length(ratedvalues)-1, main="Histogram of Number of Ratings per user", xlab="Number of films rated", ylab="Frequency")
+ 
+#Most prolific User Id is 547 
+cat("Details of Most Prolific User \n")
+ratingsuser[which(ratingsuser$FilmsRated == max(ratingsuser$FilmsRated)), ]
+
+avgcount= mean(ratingsuser$FilmsRated)
+cat(paste("Average films rated :" , avgcount))
+sdcount= sd(ratingsuser$FilmsRated)
+upperCount= avgcount + 3*sdcount
+
+
+#plot(ratingsuser$UserId, ratingsuser$FilmsRated, pch=4)
+#abline(h=avgcount, lwd=2, col="red")
+
+```
+
+
+
+### d) Plot number of movies rated (by year) of the most prolific rater. What does this trend look like?
+```{r}
+awesomeratings=ratings[which(ratings$userId == 547),]
+#awesomeratings
+
+#We need to make a table which keeps only the year, and the corresponding frequency
+yeartable =table(awesomeratings$year)
+yearlyratings= data.frame(yeartable)
+colnames(yearlyratings) = c("Year","UserRated")
+
+#plot yearly ratings of User Id 547 
+plot(yearlyratings, ylim=c(0,300), main="User 547's Rated Films vs Total(Blue)", xlab="Year", ylab="Number of Films")
+abline(h=mean(yearlyratings$UserRated), col="red", lwd=2)
+
+#Add points for yearly total movies in dataset
+yearlymovies = data.frame(table(movies$year))
+colnames(yearlymovies) = c("Year", "TotalMovies")
+points(yearlymovies, col="blue")
+
+#points(yeartable, col="green")
+```
+

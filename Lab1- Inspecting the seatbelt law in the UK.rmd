@@ -1,0 +1,251 @@
+---
+title: 'Lab 1: Seatbelts in UK: Exploratory Analysis in R'
+author: "Vaibhavi"
+date: "January 11, 2017"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Step 0: Load the Data
+Let's read the file which contains the seatbelt data
+```{r setwd("C:/Users/Vibes/Desktop/573-Data Science-1/Labs")}
+seatbelts = read.csv("seatbelts.csv")
+
+```
+
+### Step 1: Data Cleaning
+What kind of data are in seatbelts? 
+```{r}
+#Find class of seatbelts (dataframe)
+class(seatbelts)
+
+#Find the dimensions(rows , columns) of seatbelts
+dim(seatbelts)
+#Names of columns in dataframe
+colnames(seatbelts)
+#Summary data in dataframe
+summary(seatbelts)
+```
+How many cases are in the observed data?
+```{r}
+nrow(seatbelts)
+```
+
+what variables are observed for each month?
+```{r}
+unique(seatbelts[,'year.month'])
+#Find unique distinct values of year in the data
+unique(seatbelts[,'year'])
+
+```
+
+EXTRA ANALYSIS: Create a useful Month & Actual Year column
+```{r}
+#Creating a month column
+month=seatbelts[,"year.month"]- floor(seatbelts[,"year.month"])
+seatbelts[,"month"]=round(month*12) +1
+seatbelts[,"month"]
+
+#Creating the Year Column
+seatbelts[,"actualyear"]=floor(seatbelts[,"year.month"])
+seatbelts[,"actualyear"]
+
+#There are many issues in the data itself.Simply subtracting year.month and year gives negative values.
+# This is because year.month has been rounded off, so there are records in the data with month as 1974 July, classified as year 1975
+#And floor gives values that are fractionally off by 0.004 still, and ranging from 0 to 11, hence needs to be rounded & incremented for calculating month
+```
+
+### Step 2 : Compute Averages
+
+Compute Average fatalities
+```{r}
+#Average fatalaties in a year
+mean(seatbelts[,"DriversKilled"])
+
+# Fatalities in 1969 : depends on year.month (Due to year being inaccurate in representing actual year of accident)
+mean(seatbelts[seatbelts[,"year.month"]>=1969 & seatbelts[,"year.month"]<1970,"DriversKilled"])
+
+by(seatbelts[,"DriversKilled"], seatbelts[,"year"], mean)
+
+```
+
+```{r}
+#Number of Total Rear Fatalities
+mean(seatbelts[,"rear"])
+
+# What this does is to create a TRUE  FALSE vector as a result
+seatbelts[,"year"]==1972
+
+#Get ALL the rows which are rear seat fatalities in 1972
+seatbelts[seatbelts[,"year"]==1972,]
+```
+
+```{r}
+# Monthly rear seat fatalities in 1972
+seatbelts[seatbelts[,"year"]==1972,"rear"]
+
+# Average number of fatalities in 1970
+mean(seatbelts[seatbelts[,"year"]==1970,"DriversKilled"])
+
+# Average number of fatalities in 1978
+mean(seatbelts[seatbelts[,"year"]==1972,"DriversKilled"])
+
+# Average number of rear seat fatalities in 1972
+mean(seatbelts[seatbelts[,"year"]==1972,"rear"])
+
+# Average number of  rear seat fatalities in 1980
+mean(seatbelts[seatbelts[,"year"]==1978,"rear"])
+
+
+```
+### Step 3 : Exploring Relationships 1 (Factors)
+Plot some data. What do you see? What hypotheses might you make after seeing these relationships?
+
+The data seems to suggest that the more distance cars drive, the lesser the chances of accidents. Possible explanations are: experienced drivers are better drivers.
+
+*Plot 1: Does distance travelled make a difference?*
+```{r}
+#Plot the relationship between drivers killed or seriously injured and petrol price and kilometers traveled.
+plot(seatbelts[,"kms"], seatbelts[,"drivers"], main="Drivers killed, and distance travelled", xlab="distance", ylab="number of drivers")
+
+
+```
+
+
+*Plot 2: Do accidents happen more in certain months of the year?*
+The data suggests that Months 10-12, i.e. October to December have the highest monthly average deaths due to accidents.
+Intuitively, this can be explained because Winter & Rainy conditions in those months can lead to more accidents.
+
+The least monthly average of deaths of drivers seem to be in April.
+This seems to suggest a cyclical nature to the accidents.
+
+```{r}
+monthlydeaths = aggregate(seatbelts[,"DriversKilled"], by=list(Category=seatbelts[,"month"]), FUN=mean)
+
+#What does this monthlydeaths data have?
+head(monthlydeaths)
+
+# Plot number of deaths with month
+plot(monthlydeaths[,"Category"],monthlydeaths[,"x"], main="Average number of drivers killed by month (Aggregated over all years)", xlab="Month of Year", ylab="Number of Deaths", pch=16, lty=2)
+```
+
+* Plot 3 : Petrol effects on Van *
+As the price of petrol increases, there seems to be fewer clusters of accidents in a month. This can be possibly explained due to lower number of vehicles plying on roads when price of petrol is high, and hence fewer number of fatal accidents. This needs further analysis.
+```{r}
+plot(seatbelts[,"PetrolPrice"], seatbelts[,"drivers"], main="Effect of Petrol Price on Number of Drivers Killed", xlab="price of petrol", ylab="number of drivers killed in a month", pch=15, lty=2)
+```
+
+
+### Step 4 : Explore relationships 2 (Effects of law)
+Considering the policy aspects of the data
+Did it reduce fatalities?
+Consider a research question that asks about the  implementation of the seatbelt law. Did it have an effect? Did it reduce fatalities?
+
+Question: What were the rear seat fatalities overall before and after the law?
+The variables we can look at are mean drivers killed monthly
+
+Was it a gradual decline? Sharp? Does it appear large in magnitude or small? 
+Let's create subsets of data to see if the date made any changes.
+
+```{r}
+
+#Subset of data BEFORE Seatbelt Law
+before= subset(seatbelts,seatbelts[,"law"]==0 )
+nrow(before)
+
+#Subset of data AFTER Seatbelt Law
+after= subset(seatbelts,seatbelts[,"law"]==1 )
+nrow(after)
+```
+
+The simplest way to compare if the law had a difference was to see if the average number of monthly deaths, injuries dipped after the law
+```{r}
+#Let's create subsets of data
+#Means of data BEFORE Seatbelt Law
+beforeavgDK=mean(before[,"DriversKilled"])
+beforeavgDri=mean(before[,"drivers"])
+beforeavgVan=mean(before[,"VanKilled"])
+beforeavgFront=mean(before[,"front"])
+beforeavgRear=mean(before[,"rear"])
+
+
+#Means of data AFTER Seatbelt Law
+afteravgDK=mean(after[,"DriversKilled"])
+afteravgDri=mean(after[,"drivers"])
+afteravgVan=mean(after[,"VanKilled"])
+afteravgFront=mean(after[,"front"])
+afteravgRear=mean(after[,"rear"])
+
+
+#Impact of Law on:
+
+#Drivers killed per month=
+beforeavgDK-afteravgDK
+
+#Drivers killed or seriously injured per month=
+beforeavgDri-afteravgDri
+
+#Commercial Van Drivers killed per month=
+beforeavgVan-afteravgVan
+
+#Front seat passengers killed per month=
+beforeavgFront-afteravgFront
+
+#Rear seat passengers killed per month=
+beforeavgRear-afteravgRear
+
+```
+Though the law seems to have had a major impact on the number of drivers killed, injured and front seat passanger's deaths.
+But, there is a small increase in the number of rear seat passengers killed every month.
+Overall, there seems a positive impact from the seatbelts..... 
+
+.. But there is a *caveat* to the above analysis
+This doesn't factor in whether the monthly deaths were coming down yearly in a trend even without the law!
+There are also data used in the before calculation for many years before the law, which might be outdated.
+So a new way to visualize impact of the law is through a time series!
+Let's plot the before and after the law in different point types & Use ABLine to demarcate the time of change
+```{r}
+
+yearlydeaths = aggregate(seatbelts[,"DriversKilled"], by=list(Category=seatbelts[,"year"]), FUN=mean)
+
+#What does this yearlydeaths data have?
+head(yearlydeaths)
+
+# Plot number of deaths with month
+plot(yearlydeaths[,"Category"],yearlydeaths[,"x"], main="Average number of drivers killed by year", xlab="Year", ylab="Number of Deaths", pch=16, lty=2)
+abline(h=0, v=1983.083, col = "gray60")
+
+
+```
+There was a sharp deline after the law passed, but high numbers of deaths as earlier observed repeat again in 1985. Thus, the seatbelt law initially had a large effect, which might have tapered off. A factor to consider to better explain this data is seasonality, and look at what kind of laws were in place.
+
+### Step 5 : Extra Credit
+**Be creative! What additional research questions might you want to explore in this data? See what you can discover about the relationships that exist between variables in this dataset. Produce a table or figure to communicate your findings and describe in words what you found and why it's interesting.**
+
+*Plot: Closer look at seasonality - FOR EXTRA CREDIT*
+Let's plot the same data across years in a large time series to see if the cyclical nature holds good over all years
+```{r}
+yearmonthdeaths = aggregate(seatbelts[,"DriversKilled"], by=seatbelts[c("actualyear","month")], FUN=mean)
+head(yearmonthdeaths)
+
+plot(yearmonthdeaths[,"month"],yearmonthdeaths[,"x"], main="Average number of drivers killed by month (Aggregated over all years)", xlab="Month of Year", ylab="Number of Deaths", pch=16, lty=2)
+
+#plot(seatbelts[,"year.month"], seatbelts[,"DriversKilled"], main="Average number of drivers killed by month - Time Series", xlab="Month of Year", ylab="Number of Deaths", pch=16, lty=2)
+```
+
+
+*Here are a few aspects done apart from asked questions*
+- Understanding actual year from data, instead of inaccurate year data
+- Creating Month Data
+
+*Questions that can be further asked:*
+1) How do van deaths compare to car crashes?
+2) Do van deaths also exhibit seasonality?
+3) What would be the predicted values of the deaths, even if law was not in effect?
+4) Does the kind of seatbelt used (modern ones) make more of a difference than the basic ones? Need more data.
+5) How to control for factors like car model, and safety features of car apart from seatbelts?
